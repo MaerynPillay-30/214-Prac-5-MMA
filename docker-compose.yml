@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  campusguard:
+    build: .
+    image: campusguard-app
+    container_name: campusguard
+    # Keeps stdin/tty open so GDB can be used interactively inside the container
+    stdin_open: true
+    tty: true
