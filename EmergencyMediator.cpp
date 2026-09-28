@@ -18,6 +18,7 @@ void EmergencyMediator::notify(ResponseComponent* sender, const std::string& eve
                   << "\" (command-initiated) -> coordinating response." << std::endl;
     }
     // Coordinate: relay event to all other registered colleagues
+    // Notify every registered component except the component that triggered the event
     for (auto* comp : components) {
         if (comp != sender) {
             comp->receiveNotification(event);

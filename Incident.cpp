@@ -16,6 +16,7 @@ Incident::~Incident() {
 }
 
 void Incident::changeState(IncidentState* newState) {
+    //the incident owns its current state, so the prev state must be released first
     delete state;     // safe — deleting nullptr is a no-op in C++
     state = newState;
 }

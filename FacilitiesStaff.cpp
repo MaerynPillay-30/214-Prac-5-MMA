@@ -26,6 +26,7 @@ void FacilitiesStaff::unlockArea(const std::string& area) {
 
 void FacilitiesStaff::restrictAccess(const std::string& area) {
     std::cout << "    [FacilitiesStaff:" << unitID << "] Access RESTRICTED: " << area << std::endl;
+    //let the mediator inform the other response units that access is now restricted
     triggerEvent("ACCESS_RESTRICTED:" + area);
 }
 

@@ -14,6 +14,7 @@ OperatorTerminal::~OperatorTerminal() {
 void OperatorTerminal::executeCommand(EmergencyCommand* cmd) {
     std::cout << "  [OperatorTerminal] Executing command: \"" << cmd->getCommandName()
               << "\"" << std::endl;
+    //execute the command before adding it to the history for possible undo
     cmd->execute();
     history.push_back(cmd);
 }

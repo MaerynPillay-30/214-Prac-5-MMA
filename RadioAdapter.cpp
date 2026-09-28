@@ -24,5 +24,6 @@ void RadioAdapter::sendAlert(const std::string& message) {
     } else if (message.find("ALL CLEAR") != std::string::npos || message.find("cancelled") != std::string::npos) {
         code = 000;
     }
+    //forward the translated signal code to the existing legacy radio system
     legacySystem->transmitEmergencySignal(code, message);
 }
