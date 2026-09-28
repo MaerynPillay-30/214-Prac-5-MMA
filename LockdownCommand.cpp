@@ -2,19 +2,20 @@
 #include "FacilitiesStaff.h"
 #include <iostream>
 
-LockdownCommand::LockdownCommand(FacilitiesStaff* recv, const std::string& s)
-    : receiver(recv), area(s) {}
+LockdownCommand::LockdownCommand(FacilitiesStaff* recv, const std::string& a)
+    : receiver(recv), area(a) {}
 
-void LockdownCommand::execute() {
-    std::cout << "    [LockdownCommand] Initiating lockdown for area: " << area << std::endl;
+bool LockdownCommand::execute() {
+    std::cout << "    [LockdownCommand] Locking down " << area << std::endl;
     receiver->lockArea(area);
+    return true;
 }
 
 void LockdownCommand::undo() {
-    std::cout << "    [LockdownCommand] Lifting lockdown for area: " << area << std::endl;
+    std::cout << "    [LockdownCommand] Lifting lockdown of " << area << std::endl;
     receiver->unlockArea(area);
 }
 
-std::string LockdownCommand::getCommandName() {
-    return "LockdownCommand: \"" + area + "\"";
+std::string LockdownCommand::getCommandName() const {
+    return "Lockdown " + area;
 }

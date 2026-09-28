@@ -5,17 +5,17 @@
 
 /**
  * SecurityFactory — Factory Method Pattern: Concrete Creator.
- * Creates and configures SecurityTeam instances without the client
- * needing to know construction details or the concrete class name.
+ * Creates SecurityTeam units.
  */
 class SecurityFactory : public ResponseUnitFactory {
 public:
-    SecurityFactory() = default;
-    ~SecurityFactory() override = default;
+    SecurityFactory() {}
+    ~SecurityFactory() override {}
 
+protected:
     ResponseComponent* createResponder(CampusCoordinator* coord,
                                        const std::string& unitID,
-                                       const std::string& startLocation) override;
+                                       const std::string& baseLocation) override;
 };
 
 #endif // SECURITYFACTORY_H

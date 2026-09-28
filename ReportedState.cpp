@@ -3,25 +3,23 @@
 #include "Incident.h"
 #include <iostream>
 
-ReportedState::ReportedState(Incident* ctx) : IncidentState(ctx) {
-    std::cout << "  [Incident:" << ctx->getLocation()
-              << "] State  -->  REPORTED" << std::endl;
-}
-
 void ReportedState::escalate(Incident* ctx) {
     std::cout << "  [Incident:" << ctx->getLocation()
-              << "] REPORTED --> escalating to ACTIVE" << std::endl;
-    // IMPORTANT: changeState deletes 'this'. Do not access members after this call.
-    ctx->changeState(new ActiveState(ctx));
+              << "] Response confirmed — activating incident" << std::endl;
+    ctx->changeState(new ActiveState()); // deletes this object: return immediately
 }
 
 void ReportedState::resolve(Incident* ctx) {
-    // Invalid transition — sensible failure handling (requirement 6)
     std::cout << "  [Incident:" << ctx->getLocation()
-              << "] ERROR: Cannot resolve a REPORTED incident. Escalate first." << std::endl;
+              << "] ERROR: Cannot resolve a REPORTED incident — it must be activated first."
+              << std::endl;
 }
 
-void ReportedState::addNotes(Incident* ctx, const std::string& note) {
-    std::cout << "  [Incident:" << ctx->getLocation()
-              << "] [REPORTED] Note: " << note << std::endl;
+void ReportedState::addNote(Incident* ctx, const std::string& note) {
+    std::cout << "  [Incident:" << ctx->getLocation() << "] [REPORTED] Note: "
+              << note << std::endl;
+}
+
+std::string ReportedState::getName() const {
+    return "REPORTED";
 }

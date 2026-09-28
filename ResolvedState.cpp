@@ -2,24 +2,22 @@
 #include "Incident.h"
 #include <iostream>
 
-ResolvedState::ResolvedState(Incident* ctx) : IncidentState(ctx) {
-    std::cout << "  [Incident:" << ctx->getLocation()
-              << "] State  -->  RESOLVED" << std::endl;
-}
-
 void ResolvedState::escalate(Incident* ctx) {
-    // Invalid operation — sensible failure (requirement 6)
     std::cout << "  [Incident:" << ctx->getLocation()
-              << "] ERROR: Cannot escalate a RESOLVED incident." << std::endl;
+              << "] ERROR: Cannot escalate a RESOLVED incident — report a new incident instead."
+              << std::endl;
 }
 
 void ResolvedState::resolve(Incident* ctx) {
-    // Invalid operation — sensible failure (requirement 6)
     std::cout << "  [Incident:" << ctx->getLocation()
-              << "] ERROR: Incident already RESOLVED — no further action needed." << std::endl;
+              << "] ERROR: Incident is already RESOLVED." << std::endl;
 }
 
-void ResolvedState::addNotes(Incident* ctx, const std::string& note) {
-    std::cout << "  [Incident:" << ctx->getLocation()
-              << "] [RESOLVED] Archived note: " << note << std::endl;
+void ResolvedState::addNote(Incident* ctx, const std::string& note) {
+    std::cout << "  [Incident:" << ctx->getLocation() << "] [RESOLVED] Archived note: "
+              << note << std::endl;
+}
+
+std::string ResolvedState::getName() const {
+    return "RESOLVED";
 }

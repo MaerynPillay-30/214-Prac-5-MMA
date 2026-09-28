@@ -5,17 +5,17 @@
 
 /**
  * MedicalFactory — Factory Method Pattern: Concrete Creator.
- * Creates and configures MedicalResponder instances, decoupling
- * the caller from construction details.
+ * Creates MedicalResponder units.
  */
 class MedicalFactory : public ResponseUnitFactory {
 public:
-    MedicalFactory() = default;
-    ~MedicalFactory() override = default;
+    MedicalFactory() {}
+    ~MedicalFactory() override {}
 
+protected:
     ResponseComponent* createResponder(CampusCoordinator* coord,
                                        const std::string& unitID,
-                                       const std::string& startLocation) override;
+                                       const std::string& baseLocation) override;
 };
 
 #endif // MEDICALFACTORY_H

@@ -1,19 +1,21 @@
 #include "AlertCommand.h"
+#include "ExternalCommsInterface.h"
 #include <iostream>
 
 AlertCommand::AlertCommand(ExternalCommsInterface* recv, const std::string& msg)
-    : message(msg), area(""), receiver(recv) {}
+    : receiver(recv), message(msg) {}
 
-void AlertCommand::execute() {
-    std::cout << "    [AlertCommand] Broadcasting campus alert via external comms..." << std::endl;
+bool AlertCommand::execute() {
+    std::cout << "    [AlertCommand] Sending alert via external comms" << std::endl;
     receiver->sendAlert(message);
+    return true;
 }
 
 void AlertCommand::undo() {
-    std::cout << "    [AlertCommand] Cancelling alert — broadcasting ALL CLEAR." << std::endl;
-    receiver->sendAlert("ALL CLEAR — Previous alert cancelled: " + message);
+    std::cout << "    [AlertCommand] Retracting alert" << std::endl;
+    receiver->sendAlert("ALL CLEAR — retracted: " + message);
 }
 
-std::string AlertCommand::getCommandName() {
-    return "AlertCommand: \"" + message + "\"";
+std::string AlertCommand::getCommandName() const {
+    return "Alert \"" + message + "\"";
 }

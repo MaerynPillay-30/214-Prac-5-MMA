@@ -5,18 +5,17 @@
 
 /**
  * ReportedState — State Pattern: Concrete State.
- * Initial state after an incident is logged. The only valid transition
- * from Reported is to Active (escalate). Attempting to resolve a
- * Reported incident is rejected with a clear message.
+ * Initial state. escalate() moves to ACTIVE; resolve() is rejected.
  */
 class ReportedState : public IncidentState {
 public:
-    explicit ReportedState(Incident* ctx);
-    ~ReportedState() override = default;
+    ReportedState() {}
+    ~ReportedState() override {}
 
     void escalate(Incident* ctx) override;
     void resolve(Incident* ctx) override;
-    void addNotes(Incident* ctx, const std::string& note) override;
+    void addNote(Incident* ctx, const std::string& note) override;
+    std::string getName() const override;
 };
 
 #endif // REPORTEDSTATE_H

@@ -2,29 +2,33 @@
 #define DISPATCHCOMMAND_H
 
 #include "EmergencyCommand.h"
-#include "CampusCoordinator.h"
 #include <string>
+
+class CampusCoordinator;
 
 /**
  * DispatchCommand — Command Pattern: Concrete Command.
- * Encapsulates a "dispatch all available response units to location" action.
- * The receiver is the CampusCoordinator (mediator), which then coordinates
- * which colleagues should respond — demonstrating Command + Mediator interaction.
- * undo() recalls the units by sending a RECALL event through the mediator.
+ *
+ * "Send unit X to location Y." The receiver is the CampusCoordinator
+ * (Mediator), which finds the unit and checks it is available before
+ * deploying it. undo() recalls the unit to its base.
+ *
+ * Ownership: the receiver is NOT owned.
  */
 class DispatchCommand : public EmergencyCommand {
 private:
+    CampusCoordinator* receiver; // not owned
+    std::string unitID;
     std::string location;
-    std::string prevLocation;
-    CampusCoordinator* receiver;
 
 public:
-    DispatchCommand(CampusCoordinator* recv, const std::string& loc);
-    ~DispatchCommand() override = default;
+    DispatchCommand(CampusCoordinator* recv, const std::string& unit,
+                    const std::string& loc);
+    ~DispatchCommand() override {}
 
-    void execute() override;
+    bool execute() override;
     void undo() override;
-    std::string getCommandName() override;
+    std::string getCommandName() const override;
 };
 
 #endif // DISPATCHCOMMAND_H

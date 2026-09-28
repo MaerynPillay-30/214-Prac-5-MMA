@@ -1,45 +1,49 @@
 #include "OperatorTerminal.h"
+#include "EmergencyCommand.h"
 #include <iostream>
 
 OperatorTerminal::OperatorTerminal() {}
 
 OperatorTerminal::~OperatorTerminal() {
-    // Owns all commands remaining in history — clean up on destruction
-    for (auto* cmd : history) {
-        delete cmd;
+    for (std::size_t i = 0; i < history.size(); ++i) {
+        delete history[i];
     }
     history.clear();
 }
 
 void OperatorTerminal::executeCommand(EmergencyCommand* cmd) {
-    std::cout << "  [OperatorTerminal] Executing command: \"" << cmd->getCommandName()
-              << "\"" << std::endl;
-    cmd->execute();
-    history.push_back(cmd);
+    if (cmd == nullptr) {
+        return;
+    }
+    std::cout << "  [OperatorTerminal] Executing: " << cmd->getCommandName() << std::endl;
+    if (cmd->execute()) {
+        history.push_back(cmd);
+    } else {
+        std::cout << "  [OperatorTerminal] Command failed — not recorded in history." << std::endl;
+        delete cmd;
+    }
 }
 
 void OperatorTerminal::undoLastCommand() {
     if (history.empty()) {
-        // Sensible invalid-operation handling (requirement 6)
-        std::cout << "  [OperatorTerminal] ERROR: No commands in history to undo." << std::endl;
+        std::cout << "  [OperatorTerminal] ERROR: Nothing to undo — history is empty." << std::endl;
         return;
     }
     EmergencyCommand* cmd = history.back();
     history.pop_back();
-    std::cout << "  [OperatorTerminal] Undoing: \"" << cmd->getCommandName() << "\"" << std::endl;
+    std::cout << "  [OperatorTerminal] Undoing: " << cmd->getCommandName() << std::endl;
     cmd->undo();
-    delete cmd; // ownership transferred: we executed and now undo-destroyed it
+    delete cmd;
 }
 
-void OperatorTerminal::exportAuditTrail() {
-    std::cout << "\n  [OperatorTerminal] ========= AUDIT TRAIL =========" << std::endl;
+void OperatorTerminal::exportAuditTrail() const {
+    std::cout << "\n  [OperatorTerminal] ========== AUDIT TRAIL ==========" << std::endl;
     if (history.empty()) {
-        std::cout << "  [OperatorTerminal]   (history is empty)" << std::endl;
-    } else {
-        for (std::size_t i = 0; i < history.size(); ++i) {
-            std::cout << "  [OperatorTerminal]   " << (i + 1) << ". "
-                      << history[i]->getCommandName() << std::endl;
-        }
+        std::cout << "  [OperatorTerminal]   (no commands in history)" << std::endl;
     }
-    std::cout << "  [OperatorTerminal] ======= END OF TRAIL =========\n" << std::endl;
+    for (std::size_t i = 0; i < history.size(); ++i) {
+        std::cout << "  [OperatorTerminal]   " << (i + 1) << ". "
+                  << history[i]->getCommandName() << std::endl;
+    }
+    std::cout << "  [OperatorTerminal] =================================\n" << std::endl;
 }

@@ -1,282 +1,182 @@
 /**
  * main.cpp — CampusGuard: Emergency Response Coordination Platform
  *
- * Demonstrates two end-to-end runtime scenarios, each weaving together
- * multiple GoF patterns in a coherent workflow:
+ * Two end-to-end runtime stories:
  *
- * SCENARIO 1: FIRE AT SCIENCE BUILDING
- *   Patterns visible: Factory Method, State, Command, Mediator, Adapter
+ *   SCENARIO 1 — Fire at the Science Building
+ *     Factory Method, State, Command, Mediator, Adapter
  *
- * SCENARIO 2: CHEMICAL SPILL IN CHEMISTRY LAB
- *   Patterns visible: Factory Method, State, Facade (->Command+Mediator+Adapter), State
+ *   SCENARIO 2 — Chemical spill in the Chemistry Lab
+ *     Factory Method, State, Facade (-> State + Adapter + Mediator + Command)
  *
  * Ownership policy (Valgrind-clean):
- *   - main owns: mediator, radioAdapter, legacyRadio, all responders, terminal, facade
- *   - OperatorTerminal owns: EmergencyCommand* objects in its history
- *   - Incident owns: its current IncidentState*
- *   - Factories create (new) responders; main takes ownership and deletes them
- *   - Facade holds non-owning pointers to all subsystems
+ *   - main owns:             mediator, terminal, facade, incidents,
+ *                            radio adapter and legacy radio system
+ *   - EmergencyMediator owns: every response unit registered with it
+ *                            (units are created by the factories)
+ *   - OperatorTerminal owns:  every command passed to executeCommand()
+ *   - Incident owns:          its current IncidentState
+ *   - Everything else (facade members, command receivers, the adapter's
+ *     adaptee, units' coordinator pointer) is a non-owning pointer.
  */
 
 #include <iostream>
 #include <string>
 
-// Patterns: Mediator
 #include "EmergencyMediator.h"
-
-// Patterns: Factory Method
 #include "SecurityFactory.h"
 #include "MedicalFactory.h"
 #include "FacilitiesFactory.h"
-
-// Patterns: Colleagues (cast targets for factory-created responders)
-#include "SecurityTeam.h"
-#include "MedicalResponder.h"
 #include "FacilitiesStaff.h"
-
-// Patterns: Adapter
 #include "LegacyRadioSystem.h"
 #include "RadioAdapter.h"
-
-// Patterns: Command
 #include "OperatorTerminal.h"
 #include "DispatchCommand.h"
 #include "AlertCommand.h"
 #include "LockdownCommand.h"
-
-// Patterns: State
 #include "Incident.h"
-#include "ReportedState.h"
-#include "ActiveState.h"
-#include "ResolvedState.h"
-
-// Patterns: Facade
 #include "CampusGuardFacade.h"
 
-// Helper: print a bold section separator
 static void section(const std::string& title) {
-    std::cout << "\n╔══════════════════════════════════════════════════════╗" << std::endl;
-    std::cout << "║  " << title << std::endl;
-    std::cout << "╚══════════════════════════════════════════════════════╝\n" << std::endl;
+    std::cout << "\n======================================================" << std::endl;
+    std::cout << "  " << title << std::endl;
+    std::cout << "======================================================\n" << std::endl;
+}
+
+static void step(const std::string& text) {
+    std::cout << "\n--- " << text << " ---" << std::endl;
 }
 
 int main() {
-    std::cout << "========================================================" << std::endl;
-    std::cout << "  CampusGuard — Emergency Response Coordination System  " << std::endl;
-    std::cout << "========================================================\n" << std::endl;
+    section("CAMPUSGUARD — SYSTEM START-UP");
 
-    // ----------------------------------------------------------------
-    //  INFRASTRUCTURE SETUP
-    //  Create the shared subsystems that both scenarios will use.
-    // ----------------------------------------------------------------
-    section("SYSTEM INITIALISATION");
-
-    // ----- Mediator (CampusCoordinator) -----
-    std::cout << "[Setup] Creating EmergencyMediator..." << std::endl;
+    step("[Mediator] Creating the coordination network");
     EmergencyMediator* mediator = new EmergencyMediator();
 
-    // ----- Factory Method: create four response units -----
-    std::cout << "\n[Setup] Spawning response units via factories..." << std::endl;
-    SecurityFactory  secFactory;
-    MedicalFactory   medFactory;
-    FacilitiesFactory facFactory;
+    step("[Factory Method] Commissioning response units");
+    SecurityFactory   securityFactory;
+    MedicalFactory    medicalFactory;
+    FacilitiesFactory facilitiesFactory;
 
-    // Each createResponder call: factory instantiates the correct subtype,
-    // and the ResponseComponent constructor self-registers with the mediator.
-    SecurityTeam* sec1 = static_cast<SecurityTeam*>(
-        secFactory.createResponder(mediator, "SEC-01", "Main Gate"));
+    securityFactory.commissionUnit(mediator, "SEC-01", "Main Gate");
+    securityFactory.commissionUnit(mediator, "SEC-02", "East Checkpoint");
+    medicalFactory.commissionUnit(mediator, "MED-01", "Campus Clinic");
+    // The facilities unit is also the receiver of LockdownCommand, which needs
+    // the building-access operations, so the client keeps a typed pointer to it.
+    FacilitiesStaff* facilities = static_cast<FacilitiesStaff*>(
+        facilitiesFactory.commissionUnit(mediator, "FAC-01", "Facilities Hub"));
 
-    SecurityTeam* sec2 = static_cast<SecurityTeam*>(
-        secFactory.createResponder(mediator, "SEC-02", "East Checkpoint"));
-
-    MedicalResponder* med1 = static_cast<MedicalResponder*>(
-        medFactory.createResponder(mediator, "MED-01", "Campus Clinic"));
-
-    FacilitiesStaff* fac1 = static_cast<FacilitiesStaff*>(
-        facFactory.createResponder(mediator, "FAC-01", "Facilities Hub"));
-
-    // ----- Adapter: wrap legacy radio in the modern interface -----
-    std::cout << "\n[Setup] Initialising external comms adapter..." << std::endl;
+    step("[Adapter] Connecting to the city's legacy radio network");
     LegacyRadioSystem* legacyRadio = new LegacyRadioSystem();
-    RadioAdapter*      radioAdapter = new RadioAdapter(legacyRadio);
-    radioAdapter->execute(); // confirm radio online
+    RadioAdapter*      radio       = new RadioAdapter(legacyRadio);
+    std::cout << "  RadioAdapter ready (ExternalCommsInterface -> LegacyRadioSystem)" << std::endl;
 
-    // ----- Command Invoker -----
-    std::cout << "\n[Setup] Creating OperatorTerminal (command invoker)..." << std::endl;
+    step("[Command] Opening the operator terminal");
     OperatorTerminal* terminal = new OperatorTerminal();
 
-    // ----- Facade -----
-    std::cout << "\n[Setup] Initialising CampusGuardFacade..." << std::endl;
-    CampusGuardFacade* facade = new CampusGuardFacade(terminal, mediator,
-                                                      radioAdapter, fac1);
+    step("[Facade] Wiring the emergency operations facade");
+    CampusGuardFacade* facade = new CampusGuardFacade(terminal, mediator, radio, facilities);
 
-    std::cout << "\n[Setup] System ready. All four units registered with mediator." << std::endl;
+    mediator->printRoster();
 
-    // ================================================================
-    //  SCENARIO 1: FIRE AT SCIENCE BUILDING
-    //  Patterns: Factory Method (already used), State, Command, Mediator, Adapter
-    //  This scenario shows a command triggering mediator coordination.
-    // ================================================================
-    section("SCENARIO 1 — FIRE AT SCIENCE BUILDING");
+    // =================================================================
+    //  SCENARIO 1 — FIRE AT THE SCIENCE BUILDING
+    // =================================================================
+    section("SCENARIO 1 — FIRE AT THE SCIENCE BUILDING");
 
-    // --- State Pattern: Create and transition the incident ---
-    std::cout << "--- [State] Registering incident ---" << std::endl;
-    Incident* fireIncident = new Incident(
-        "Fire reported — smoke visible from third floor",
-        "Science Building", 7, "09:14:00");
+    step("[State] Operator registers the incident");
+    Incident* fire = new Incident(mediator, "Smoke on the third floor",
+                                  "Science Building", 6, "09:14");
+    fire->addNote("Call received from the third-floor janitor");
 
-    fireIncident->changeState(new ReportedState(fireIncident));
-    fireIncident->addNotes("Call received from janitor on 3rd floor");
+    step("[State] Invalid: trying to resolve before any response");
+    fire->resolve();
 
-    // Invalid-operation case: try to resolve before activation (requirement 6)
-    std::cout << "\n--- [State] Attempting invalid resolve (should be rejected) ---" << std::endl;
-    fireIncident->resolve();
+    step("[State + Mediator] Incident activated -> units react to the change");
+    fire->escalate();
 
-    // Valid transition: Reported -> Active
-    std::cout << "\n--- [State] Escalating to ACTIVE ---" << std::endl;
-    fireIncident->escalate();
-    fireIncident->addNotes("Fire brigade on route, two exits blocked by smoke");
+    step("[Command + Mediator] Dispatch security and a medical crew");
+    terminal->executeCommand(new DispatchCommand(mediator, "SEC-01", "Science Building"));
+    terminal->executeCommand(new DispatchCommand(mediator, "MED-01", "Science Building"));
 
-    // --- Command Pattern: Dispatch command triggers Mediator coordination ---
-    std::cout << "\n--- [Command + Mediator] Dispatching response team ---" << std::endl;
-    // The DispatchCommand's receiver is the CampusCoordinator.
-    // execute() fires a "DISPATCH:Science Building" event through the mediator,
-    // which then notifies all registered colleagues — demonstrating the
-    // required "command triggers mediator coordination" sequence.
-    terminal->executeCommand(
-        new DispatchCommand(mediator, "Science Building"));
+    step("[Command] No casualties reported — operator cancels the ambulance (undo)");
+    terminal->undoLastCommand();
 
-    // --- Command + Adapter: Send campus-wide alert via legacy radio ---
-    std::cout << "\n--- [Command + Adapter] Broadcasting fire alert ---" << std::endl;
-    // AlertCommand receiver is the ExternalCommsInterface (RadioAdapter).
-    // sendAlert() is translated inside the adapter to the legacy
-    // transmitEmergencySignal(code, description) API.
-    terminal->executeCommand(
-        new AlertCommand(radioAdapter,
-                         "FIRE ALERT — Science Building. Evacuate immediately. Do not use elevators."));
+    step("[Command + Adapter] Fire alert over the legacy radio");
+    terminal->executeCommand(new AlertCommand(radio,
+        "FIRE ALERT — Science Building. Evacuate. Do not use the lifts."));
 
-    // --- Command: Lock the affected lab wing ---
-    std::cout << "\n--- [Command] Locking Science Lab Wing ---" << std::endl;
-    terminal->executeCommand(
-        new LockdownCommand(fac1, "Science Building Lab Wing"));
+    step("[Command -> Mediator] Lock the lab wing; security coordinates via the mediator");
+    terminal->executeCommand(new LockdownCommand(facilities, "Science Building Lab Wing"));
 
-    // --- State: Active incident — redundant escalation handled gracefully ---
-    std::cout << "\n--- [State] Redundant escalate while ACTIVE (invalid-op case) ---" << std::endl;
-    fireIncident->escalate();
+    step("[Command] Invalid: dispatching a unit that does not exist");
+    terminal->executeCommand(new DispatchCommand(mediator, "SEC-99", "Science Building"));
 
-    // --- State: Resolve the incident ---
-    std::cout << "\n--- [State] Resolving incident ---" << std::endl;
-    fireIncident->resolve();
+    step("[State] Fire spreads — escalate the active incident");
+    fire->escalate();
 
-    // --- State: Attempt to resolve again (invalid — already resolved) ---
-    std::cout << "\n--- [State] Attempting second resolve (should be rejected) ---" << std::endl;
-    fireIncident->resolve();
+    mediator->printRoster();
 
-    // --- Audit trail after Scenario 1 ---
+    step("[Command -> Mediator] Fire out — lift the lab wing lockdown (undo)");
+    terminal->undoLastCommand();
+
+    step("[State + Mediator] Resolve the fire; units still on scene stand down");
+    fire->resolve();
+
+    step("[State] Invalid: resolving a second time");
+    fire->resolve();
+
     terminal->exportAuditTrail();
 
+    // =================================================================
+    //  SCENARIO 2 — CHEMICAL SPILL IN THE CHEMISTRY LAB
+    // =================================================================
+    section("SCENARIO 2 — CHEMICAL SPILL IN THE CHEMISTRY LAB");
 
-    // ================================================================
-    //  SCENARIO 2: CHEMICAL SPILL IN CHEMISTRY LAB
-    //  Patterns: Factory Method (new unit mid-scenario), State,
-    //            Facade (internally coordinates Command + Mediator + Adapter)
-    //  This scenario demonstrates the Facade hiding subsystem complexity
-    //  and at least four patterns in one execution flow.
-    // ================================================================
-    section("SCENARIO 2 — CHEMICAL SPILL IN CHEMISTRY LAB");
+    step("[Factory Method] Commissioning an extra medical crew for the afternoon shift");
+    medicalFactory.commissionUnit(mediator, "MED-02", "North Campus Clinic");
 
-    // --- Factory Method: spawn an additional medical unit mid-scenario ---
-    std::cout << "--- [Factory Method] Spawning additional MedicalResponder mid-scenario ---" << std::endl;
-    MedicalResponder* med2 = static_cast<MedicalResponder*>(
-        medFactory.createResponder(mediator, "MED-02", "North Campus Clinic"));
+    step("[State] Operator registers the spill");
+    Incident* spill = new Incident(mediator, "Unidentified solvent spilled in a teaching lab",
+                                   "Chemistry Lab", 8, "14:32");
+    spill->addNote("Three students report dizziness");
 
-    // --- State: Register and escalate the chemical spill incident ---
-    std::cout << "\n--- [State] Registering chemical spill incident ---" << std::endl;
-    Incident* spillIncident = new Incident(
-        "Chemical spill — unidentified solvent in laboratory",
-        "Chemistry Lab", 9, "14:32:00");
+    step("[Facade] One call runs the whole HAZMAT protocol");
+    facade->handleChemicalSpill(spill);
 
-    spillIncident->changeState(new ReportedState(spillIncident));
-    spillIncident->addNotes("Level 3 biohazard. Evacuation of block C underway.");
-    spillIncident->escalate(); // Reported -> Active
+    mediator->printRoster();
 
-    // --- Facade: handleChemicalSpill hides the 3-subsystem workflow ---
-    // Internally: (1) comms.sendAlert [Adapter]
-    //             (2) mediator.notify("CHEMICAL_SPILL") [Mediator]
-    //             (3) terminal.executeCommand(LockdownCommand) [Command]
-    std::cout << "\n--- [Facade] Activating chemical spill protocol ---" << std::endl;
-    facade->handleChemicalSpill();
+    step("[Command] Invalid: dispatching SEC-01, which is guarding the spill");
+    terminal->executeCommand(new DispatchCommand(mediator, "SEC-01", "North Block"));
 
-    // --- Direct subsystem use: MedicalResponder provides triage (still usable) ---
-    std::cout << "--- [Direct subsystem] Medical unit performing triage ---" << std::endl;
-    med1->assessTriage();
-    med1->provideFirstAid();
-    med2->reportCasualties(3);
-
-    // --- Facade: cancelOperation — undo, notify, broadcast all-clear ---
-    std::cout << "--- [Facade] Cancelling last operation (Lockdown of Chemistry Lab Wing) ---" << std::endl;
-    facade->cancelOperation();
-
-    // --- State: Resolve the spill incident ---
-    std::cout << "\n--- [State] Resolving chemical spill incident ---" << std::endl;
-    spillIncident->addNotes("Spill contained. Ventilation restored.");
-    spillIncident->resolve();
-
-    // --- Command: demonstrate undo on an alert command ---
-    std::cout << "\n--- [Command] Operator sends another alert then immediately undoes it ---" << std::endl;
-    terminal->executeCommand(
-        new AlertCommand(radioAdapter, "SECONDARY HAZMAT WARNING — North Block"));
-    terminal->undoLastCommand(); // sends ALL CLEAR via adapter
-
-    // --- Undo when history empty (invalid-op handling) ---
-    std::cout << "\n--- [Command] Attempting undo with empty history (invalid-op case) ---" << std::endl;
-    // First drain remaining commands by undoing them all
-    terminal->undoLastCommand();
-    terminal->undoLastCommand();
-    terminal->undoLastCommand();
-    terminal->undoLastCommand();
-    // Now history is empty — next undo should be rejected gracefully
+    step("[Command + Adapter] Operator sends a warning, then retracts it (undo)");
+    terminal->executeCommand(new AlertCommand(radio,
+        "SECONDARY HAZMAT WARNING — North Block"));
     terminal->undoLastCommand();
 
-    // --- Final audit trail ---
+    step("[Command -> Mediator] Spill contained — lift the lockdown (undo)");
+    spill->addNote("Spill neutralised, ventilation restored");
+    terminal->undoLastCommand();
+
+    step("[State + Mediator] Resolve the spill; remaining units stand down");
+    spill->resolve();
+
+    mediator->printRoster();
     terminal->exportAuditTrail();
 
-    // ================================================================
-    //  SHUTDOWN — Explicit, ordered cleanup (Valgrind-clean)
-    // ================================================================
-    section("SYSTEM SHUTDOWN");
-    std::cout << "[Shutdown] Releasing all resources..." << std::endl;
+    // =================================================================
+    //  SHUTDOWN
+    // =================================================================
+    section("CAMPUSGUARD — SHUTDOWN");
 
-    // Incidents own their states — must be deleted before the mediator
-    delete spillIncident;
-    delete fireIncident;
-
-    // Facade holds non-owning pointers — delete first (no-op for owned objects)
-    delete facade;
-
-    // OperatorTerminal owns remaining commands in history
-    delete terminal;
-
-    // Response components are owned by main (created by factories)
-    // Delete before the mediator (components hold a pointer to it but
-    // the default destructor never dereferences it)
-    delete med2;
-    delete fac1;
-    delete med1;
-    delete sec2;
-    delete sec1;
-
-    // Mediator holds only non-owning pointers — delete after colleagues
-    delete mediator;
-
-    // Adapter wraps but does not own the legacy system
-    delete radioAdapter;
+    delete facade;      // non-owning: frees nothing else
+    delete terminal;    // frees the commands left in its history
+    delete spill;       // frees its current state
+    delete fire;
+    delete mediator;    // frees every registered response unit
+    delete radio;       // non-owning adapter
     delete legacyRadio;
 
-    std::cout << "[Shutdown] CampusGuard terminated cleanly." << std::endl;
-    std::cout << "\n========================================================" << std::endl;
-    std::cout << "  All six GoF patterns demonstrated across two scenarios." << std::endl;
-    std::cout << "========================================================" << std::endl;
-
+    std::cout << "All resources released. CampusGuard shut down cleanly." << std::endl;
     return 0;
 }

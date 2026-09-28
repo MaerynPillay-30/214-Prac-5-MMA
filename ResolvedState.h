@@ -5,18 +5,17 @@
 
 /**
  * ResolvedState — State Pattern: Concrete State.
- * Terminal state. Both escalate() and resolve() are rejected with clear
- * messages — demonstrating sensible handling of invalid operations.
- * Notes are accepted as archived records.
+ * Final state. escalate() and resolve() are rejected; notes are archived.
  */
 class ResolvedState : public IncidentState {
 public:
-    explicit ResolvedState(Incident* ctx);
-    ~ResolvedState() override = default;
+    ResolvedState() {}
+    ~ResolvedState() override {}
 
     void escalate(Incident* ctx) override;
     void resolve(Incident* ctx) override;
-    void addNotes(Incident* ctx, const std::string& note) override;
+    void addNote(Incident* ctx, const std::string& note) override;
+    std::string getName() const override;
 };
 
 #endif // RESOLVEDSTATE_H

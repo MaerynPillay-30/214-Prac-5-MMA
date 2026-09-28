@@ -1,0 +1,5 @@
+*.o
+CampusGuard
+run.txt
+vg.txt
+.git
