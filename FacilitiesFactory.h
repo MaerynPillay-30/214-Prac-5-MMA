@@ -5,17 +5,17 @@
 
 /**
  * FacilitiesFactory — Factory Method Pattern: Concrete Creator.
- * Creates and configures FacilitiesStaff instances, decoupling
- * the caller from construction details.
+ * Creates FacilitiesStaff units.
  */
 class FacilitiesFactory : public ResponseUnitFactory {
 public:
-    FacilitiesFactory() = default;
-    ~FacilitiesFactory() override = default;
+    FacilitiesFactory() {}
+    ~FacilitiesFactory() override {}
 
+protected:
     ResponseComponent* createResponder(CampusCoordinator* coord,
                                        const std::string& unitID,
-                                       const std::string& startLocation) override;
+                                       const std::string& baseLocation) override;
 };
 
 #endif // FACILITIESFACTORY_H

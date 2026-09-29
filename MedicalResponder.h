@@ -5,22 +5,17 @@
 
 /**
  * MedicalResponder — Mediator Pattern: Concrete Colleague.
- * Handles medical operations: ambulance dispatch, triage, first aid,
- * air evacuation and casualty reporting. Notifies the coordinator
- * when critical escalation occurs (e.g. air evac needed).
+ *
+ * Reacts to events relayed by the coordinator:
+ *  - HAZMAT:<loc>              an available crew goes to triage casualties
+ *  - INCIDENT_RESOLVED:<loc>   crews at that location stand down
  */
 class MedicalResponder : public ResponseComponent {
 public:
-    MedicalResponder(CampusCoordinator* coord, const std::string& id, const std::string& loc);
-    ~MedicalResponder() override = default;
+    MedicalResponder(CampusCoordinator* coord, const std::string& id, const std::string& base);
+    ~MedicalResponder() override {}
 
-    void deploy(const std::string& desc, const std::string& loc) override;
-    void dispatchAmbulance(const std::string& location);
-    void assessTriage();
-    void provideFirstAid();
-    void requestAirEvac();
-    void reportCasualties(int count);
-    void getStatus() override;
+    void deploy(const std::string& reason, const std::string& location) override;
     void receiveNotification(const std::string& event) override;
 };
 

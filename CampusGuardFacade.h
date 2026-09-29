@@ -1,71 +1,41 @@
 #ifndef CAMPUSGUARDFACADE_H
 #define CAMPUSGUARDFACADE_H
 
-#include <string>
-
 class OperatorTerminal;
 class CampusCoordinator;
 class ExternalCommsInterface;
 class FacilitiesStaff;
+class Incident;
 
 /**
  * CampusGuardFacade — Facade Pattern.
- * Provides high-level emergency workflow entry points that hide the
- * complexity of coordinating multiple subsystems. Each method internally
- * coordinates at least three subsystem operations (OperatorTerminal,
- * CampusCoordinator, ExternalCommsInterface) behind a single simple call.
  *
- * The underlying subsystems remain independently usable — clients that
- * need fine-grained control can still call them directly.
+ * One call for a workflow that would otherwise need the client to drive four
+ * subsystems in the right order. The subsystems stay public: main still uses
+ * the terminal, commands and incidents directly where fine control is needed.
  *
- * Ownership: The facade holds non-owning raw pointers; all subsystems
- * are owned by and destroyed by the caller (main.cpp).
+ * Ownership: holds NON-owning pointers; every subsystem is owned by main.
  */
 class CampusGuardFacade {
 private:
-    OperatorTerminal*       terminal;
-    CampusCoordinator*      mediator;
-    ExternalCommsInterface* comms;
-    FacilitiesStaff*        facilities; // needed for LockdownCommand receiver
+    OperatorTerminal*       terminal;   // not owned
+    CampusCoordinator*      mediator;   // not owned
+    ExternalCommsInterface* comms;      // not owned
+    FacilitiesStaff*        facilities; // not owned
 
 public:
-    CampusGuardFacade(OperatorTerminal* term,
-                      CampusCoordinator* med,
-                      ExternalCommsInterface* c,
-                      FacilitiesStaff* fac);
-    ~CampusGuardFacade() = default;
+    CampusGuardFacade(OperatorTerminal* term, CampusCoordinator* med,
+                      ExternalCommsInterface* c, FacilitiesStaff* fac);
+    ~CampusGuardFacade() {}
 
     /**
-     * Initiates a full campus evacuation workflow:
-     *   1. Broadcast evacuation order via external comms (Adapter)
-     *   2. Notify all response components via mediator (Mediator)
-     *   3. Execute a dispatch command through the terminal (Command)
+     * HAZMAT protocol for a reported chemical spill:
+     *   1. activate the incident                 (State -> Mediator)
+     *   2. send a HAZMAT alert off campus         (Adapter)
+     *   3. call all medical crews to the scene    (Mediator)
+     *   4. lock the area through the terminal     (Command -> FacilitiesStaff -> Mediator)
      */
-    void initiateEvacuation();
-
-    /**
-     * Activates the HAZMAT chemical spill protocol:
-     *   1. Broadcast HAZMAT alert via external comms (Adapter)
-     *   2. Coordinate HAZMAT response via mediator (Mediator)
-     *   3. Execute lockdown of chemistry wing via terminal (Command)
-     */
-    void handleChemicalSpill();
-
-    /**
-     * Triggers a targeted area lockdown:
-     *   1. Broadcast lockdown alert via external comms (Adapter)
-     *   2. Notify all components via mediator (Mediator)
-     *   3. Execute lockdown command on FacilitiesStaff via terminal (Command)
-     */
-    void triggerLockdownArea(const std::string& area);
-
-    /**
-     * Cancels the last operation:
-     *   1. Undo last command via terminal (Command undo)
-     *   2. Broadcast stand-down via mediator (Mediator)
-     *   3. Send all-clear via external comms (Adapter)
-     */
-    void cancelOperation();
+    void handleChemicalSpill(Incident* spill);
 };
 
 #endif // CAMPUSGUARDFACADE_H

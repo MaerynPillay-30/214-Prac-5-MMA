@@ -4,17 +4,16 @@
 #include <string>
 
 /**
- * ExternalCommsInterface — Adapter Pattern: Target interface.
- * This is the interface CampusGuard expects for all external communications.
- * RadioAdapter translates calls on this interface to the LegacyRadioSystem's
- * incompatible API, making the legacy system usable without modification.
+ * ExternalCommsInterface — Adapter Pattern: Target.
+ *
+ * The interface CampusGuard wants for off-campus communication: send one
+ * plain-text alert. RadioAdapter makes the LegacyRadioSystem fit it.
  */
 class ExternalCommsInterface {
 public:
-    ExternalCommsInterface() = default;
-    virtual ~ExternalCommsInterface() = default;
+    ExternalCommsInterface() {}
+    virtual ~ExternalCommsInterface() {}
 
-    virtual void execute() = 0;
     virtual void sendAlert(const std::string& message) = 0;
 };
 

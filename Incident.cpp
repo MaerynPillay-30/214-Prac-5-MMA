@@ -1,50 +1,57 @@
 #include "Incident.h"
 #include "IncidentState.h"
+#include "ReportedState.h"
+#include "CampusCoordinator.h"
 #include <iostream>
 
-Incident::Incident(const std::string& desc, const std::string& loc,
-                   int sev, const std::string& time)
-    : description(desc), location(loc), severityLevel(sev),
-      casualtyCount(0), timestamp(time), state(nullptr) {
-    std::cout << "  [Incident] Created: \"" << description << "\" at " << location
-              << " (severity=" << severityLevel << ", time=" << timestamp << ")" << std::endl;
+Incident::Incident(CampusCoordinator* coord, const std::string& desc,
+                   const std::string& loc, int severity, const std::string& time)
+    : description(desc), location(loc), severityLevel(severity),
+      timestamp(time), state(new ReportedState()), coordinator(coord) {
+    std::cout << "  [Incident] Registered at " << timestamp << ": \"" << description
+              << "\" at " << location << " (severity " << severityLevel << "/10, status "
+              << state->getName() << ")" << std::endl;
 }
 
 Incident::~Incident() {
     delete state;
-    state = nullptr;
 }
 
 void Incident::changeState(IncidentState* newState) {
-    //the incident owns its current state, so the prev state must be released first
-    delete state;     // safe — deleting nullptr is a no-op in C++
+    IncidentState* oldState = state;
     state = newState;
+    std::cout << "  [Incident:" << location << "] Status " << oldState->getName()
+              << " --> " << state->getName() << std::endl;
+    delete oldState;
+
+    // Tell the response network that this incident's condition changed.
+    if (coordinator != nullptr) {
+        coordinator->broadcast("INCIDENT_" + state->getName() + ":" + location);
+    }
 }
 
 void Incident::escalate() {
-    if (state) {
-        state->escalate(this);
-    } else {
-        std::cout << "  [Incident:" << location << "] No state set — cannot escalate." << std::endl;
-    }
+    state->escalate(this);
 }
 
 void Incident::resolve() {
-    if (state) {
-        state->resolve(this);
-    } else {
-        std::cout << "  [Incident:" << location << "] No state set — cannot resolve." << std::endl;
+    state->resolve(this);
+}
+
+void Incident::addNote(const std::string& note) {
+    state->addNote(this, note);
+}
+
+void Incident::raiseSeverity() {
+    if (severityLevel < 10) {
+        ++severityLevel;
     }
 }
 
-void Incident::addNotes(const std::string& note) {
-    if (state) {
-        state->addNotes(this, note);
-    } else {
-        std::cout << "  [Incident:" << location << "] No state set — cannot add notes." << std::endl;
-    }
+std::string Incident::getLocation() const {
+    return location;
 }
 
-std::string Incident::getDescription() const { return description; }
-std::string Incident::getLocation()    const { return location; }
-int         Incident::getSeverityLevel() const { return severityLevel; }
+int Incident::getSeverityLevel() const {
+    return severityLevel;
+}

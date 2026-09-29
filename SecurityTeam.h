@@ -5,22 +5,18 @@
 
 /**
  * SecurityTeam — Mediator Pattern: Concrete Colleague.
- * Handles security operations: team dispatch, area patrol, suspect detention
- * and escalation. Communicates all significant state changes back through
- * the CampusCoordinator so other colleagues can react.
+ *
+ * Reacts to events relayed by the coordinator:
+ *  - AREA_LOCKED:<area>        an available team secures the perimeter
+ *  - AREA_UNLOCKED:<area>      teams guarding that area stand down
+ *  - INCIDENT_RESOLVED:<loc>   teams at that location stand down
  */
 class SecurityTeam : public ResponseComponent {
 public:
-    SecurityTeam(CampusCoordinator* coord, const std::string& id, const std::string& loc);
-    ~SecurityTeam() override = default;
+    SecurityTeam(CampusCoordinator* coord, const std::string& id, const std::string& base);
+    ~SecurityTeam() override {}
 
-    void deploy(const std::string& desc, const std::string& loc) override;
-    void dispatchTeam(const std::string& location);
-    void requestBackup();
-    void reportStatus();
-    void detainSuspect();
-    void escalateLevel();
-    void getStatus() override;
+    void deploy(const std::string& reason, const std::string& location) override;
     void receiveNotification(const std::string& event) override;
 };
 

@@ -2,25 +2,29 @@
 #define RADIOADAPTER_H
 
 #include "ExternalCommsInterface.h"
-#include "LegacyRadioSystem.h"
+
+class LegacyRadioSystem;
 
 /**
  * RadioAdapter — Adapter Pattern: Object Adapter.
- * Implements the ExternalCommsInterface (target) expected by CampusGuard
- * and internally delegates to LegacyRadioSystem (adaptee), translating
- * the modern sendAlert(string) call into the legacy transmitEmergencySignal(int, string).
- * The adapter is necessary because simply wrapping the class without changing
- * the interface would not allow polymorphic substitution.
+ *
+ * Implements sendAlert(message) by translating it into the legacy call
+ * transmitEmergencySignal(code, description): it works out the numeric
+ * signal code the city radio network expects from the alert text.
+ *
+ * Ownership: the adaptee is NOT owned — the legacy system exists
+ * independently of CampusGuard and is created and destroyed by main.
  */
 class RadioAdapter : public ExternalCommsInterface {
 private:
-    LegacyRadioSystem* legacySystem;
+    LegacyRadioSystem* legacySystem; // not owned
+
+    static int signalCodeFor(const std::string& message);
 
 public:
     explicit RadioAdapter(LegacyRadioSystem* legacy);
-    ~RadioAdapter() = default;
+    ~RadioAdapter() override {}
 
-    void execute() override;
     void sendAlert(const std::string& message) override;
 };
 

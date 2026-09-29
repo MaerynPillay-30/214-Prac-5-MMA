@@ -6,22 +6,21 @@
 class Incident; // forward declaration
 
 /**
- * IncidentState — State Pattern: Abstract State interface.
- * Controls the lifecycle of an Incident. Concrete states (Reported, Active,
- * Resolved) define which transitions are valid and what happens during each,
- * preventing invalid state jumps and removing large switch statements from Incident.
+ * IncidentState — State Pattern: abstract State.
+ *
+ * Each concrete state decides which operations are valid and which state
+ * comes next: Reported -> Active -> Resolved. Invalid requests are rejected
+ * with a clear message instead of being silently ignored.
  */
 class IncidentState {
-protected:
-    Incident* context;
-
 public:
-    explicit IncidentState(Incident* ctx);
-    virtual ~IncidentState() = default;
+    IncidentState() {}
+    virtual ~IncidentState() {}
 
     virtual void escalate(Incident* ctx) = 0;
     virtual void resolve(Incident* ctx) = 0;
-    virtual void addNotes(Incident* ctx, const std::string& note) = 0;
+    virtual void addNote(Incident* ctx, const std::string& note) = 0;
+    virtual std::string getName() const = 0;
 };
 
 #endif // INCIDENTSTATE_H

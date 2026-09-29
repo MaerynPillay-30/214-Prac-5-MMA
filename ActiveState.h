@@ -5,17 +5,17 @@
 
 /**
  * ActiveState — State Pattern: Concrete State.
- * The incident is under active response. escalate() raises severity
- * within the active state. resolve() transitions to ResolvedState.
+ * Response under way. escalate() raises severity; resolve() moves to RESOLVED.
  */
 class ActiveState : public IncidentState {
 public:
-    explicit ActiveState(Incident* ctx);
-    ~ActiveState() override = default;
+    ActiveState() {}
+    ~ActiveState() override {}
 
     void escalate(Incident* ctx) override;
     void resolve(Incident* ctx) override;
-    void addNotes(Incident* ctx, const std::string& note) override;
+    void addNote(Incident* ctx, const std::string& note) override;
+    std::string getName() const override;
 };
 
 #endif // ACTIVESTATE_H

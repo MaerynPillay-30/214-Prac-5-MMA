@@ -4,40 +4,49 @@
 #include <string>
 
 class IncidentState;
+class CampusCoordinator;
 
 /**
  * Incident — State Pattern: Context.
- * Represents an emergency event on campus. All behaviour that depends
- * on operational status (escalate, resolve, addNotes) is delegated to
- * the current IncidentState object, making invalid transitions impossible
- * and keeping the Incident class free of conditional branching.
  *
- * Ownership: Incident owns its current IncidentState* exclusively.
+ * An emergency on campus. escalate(), resolve() and addNote() behave
+ * differently depending on the current IncidentState, so Incident itself has
+ * no status switch. Every new incident starts in the Reported state.
+ *
+ * Each state change is announced to the CampusCoordinator (Mediator), which
+ * is how response units coordinate when an incident's condition changes.
+ *
+ * Ownership: Incident OWNS its current IncidentState and deletes it on every
+ * transition and in its destructor. The coordinator pointer is NOT owned.
  */
 class Incident {
 private:
     std::string description;
     std::string location;
     int severityLevel;
-    int casualtyCount;
     std::string timestamp;
-    IncidentState* state;
+    IncidentState* state;            // owned
+    CampusCoordinator* coordinator;  // not owned
 
 public:
-    Incident(const std::string& desc, const std::string& loc,
-             int sev, const std::string& time);
+    Incident(CampusCoordinator* coord, const std::string& desc,
+             const std::string& loc, int severity, const std::string& time);
     ~Incident();
 
-    // Called by concrete states to perform a safe state transition
+    // Called by concrete states. Deletes the old state, so a state must not
+    // touch its own members after calling this.
     void changeState(IncidentState* newState);
 
     void escalate();
     void resolve();
-    void addNotes(const std::string& note);
+    void addNote(const std::string& note);
 
-    std::string getDescription() const;
+    void raiseSeverity();
     std::string getLocation() const;
     int getSeverityLevel() const;
+
+    Incident(const Incident&) = delete;             // owning: not copyable
+    Incident& operator=(const Incident&) = delete;
 };
 
 #endif // INCIDENT_H

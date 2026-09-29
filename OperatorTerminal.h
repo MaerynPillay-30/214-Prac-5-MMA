@@ -2,17 +2,22 @@
 #define OPERATORTERMINAL_H
 
 #include <vector>
-#include "EmergencyCommand.h"
+
+class EmergencyCommand;
 
 /**
  * OperatorTerminal — Command Pattern: Invoker.
- * Receives command objects from the client (main), executes them, and
- * maintains a history stack that enables undo and audit-trail export.
- * The terminal owns every command it has executed and frees them on destruction.
+ *
+ * Executes commands, keeps a history of the ones that succeeded (for undo and
+ * the audit trail) and knows nothing about the receivers.
+ *
+ * Ownership: the terminal takes ownership of every command passed to
+ * executeCommand(). A failed command is deleted straight away; a successful one
+ * stays in the history until it is undone or the terminal is destroyed.
  */
 class OperatorTerminal {
 private:
-    std::vector<EmergencyCommand*> history;
+    std::vector<EmergencyCommand*> history; // owned
 
 public:
     OperatorTerminal();
@@ -20,7 +25,10 @@ public:
 
     void executeCommand(EmergencyCommand* cmd);
     void undoLastCommand();
-    void exportAuditTrail();
+    void exportAuditTrail() const;
+
+    OperatorTerminal(const OperatorTerminal&) = delete;            // owning: not copyable
+    OperatorTerminal& operator=(const OperatorTerminal&) = delete;
 };
 
 #endif // OPERATORTERMINAL_H

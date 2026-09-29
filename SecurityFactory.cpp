@@ -3,9 +3,9 @@
 #include <iostream>
 
 ResponseComponent* SecurityFactory::createResponder(CampusCoordinator* coord,
-                                                    const std::string& unitID,
-                                                    const std::string& startLocation) {
-    std::cout << "  [SecurityFactory] Instantiating SecurityTeam: " << unitID
-              << " @ " << startLocation << std::endl;
-    return new SecurityTeam(coord, unitID, startLocation);
+                                                 const std::string& unitID,
+                                                 const std::string& baseLocation) {
+    std::cout << "  [SecurityFactory] Creating SecurityTeam " << unitID
+              << " based at " << baseLocation << std::endl;
+    return new SecurityTeam(coord, unitID, baseLocation);
 }

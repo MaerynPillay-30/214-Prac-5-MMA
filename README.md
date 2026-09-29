@@ -25,7 +25,7 @@ The project is implemented in C++11 and meaningfully demonstrates the following 
 CampusGuard demonstrates:
 * Registering incidents and tracking their changing operational status
 * Dispatching campus security, medical responders, and facilities staff
-* Executing building access actions (locking/unlocking doors, restricting areas)
+* Executing building access actions (locking and unlocking areas)
 * Operator actions encapsulated as distinct objects (with execution and undo capabilities)
 * Automated coordination between response components when an incident changes condition
 * Seamless integration with an existing legacy or external communication service
@@ -37,22 +37,33 @@ CampusGuard demonstrates:
 ## Design Patterns
 
 ### Command
-The Command pattern represents operator actions (like dispatching a unit or securing a building) as objects. This separates the creation of the request from its execution and allows commands to be tracked or undone.
+The Command pattern represents operator actions as objects (`DispatchCommand`, `LockdownCommand`, `AlertCommand`). `OperatorTerminal` (invoker) executes them, records the ones that succeed, supports undo, and prints an audit trail. A command that fails (unknown or unavailable unit) is rejected and not recorded.
 
 ### Mediator
-The Mediator pattern coordinates the collaborating response components (Security, Medical, Facilities). When a component updates or an incident condition changes, the mediator ensures the necessary departments react without them relying on direct many-to-many dependencies.
+`EmergencyMediator` coordinates the response units (`SecurityTeam`, `MedicalResponder`, `FacilitiesStaff`); no unit holds a pointer to another. When `FacilitiesStaff` locks or unlocks an area, the mediator relays the event and security teams secure or leave the perimeter. When an incident changes state, the mediator broadcasts the change and the units on scene react (deploy or stand down).
 
 ### Adapter
-The Adapter pattern translates the incompatible interface of an external, legacy city radio system into the modern communications interface that CampusGuard expects to use.
+`RadioAdapter` implements `ExternalCommsInterface::sendAlert(message)` by translating it into the legacy call `LegacyRadioSystem::transmitEmergencySignal(code, description)`, working out the numeric city-radio signal code from the alert text.
 
 ### Facade
-The Facade pattern provides high-level entry points for complex, realistic workflows (e.g., initiating a campus evacuation) by coordinating three or more underlying subsystem operations behind a single, simple method call.
+`CampusGuardFacade::handleChemicalSpill(incident)` runs the full HAZMAT protocol in one call: activate the incident (State), alert the city over the legacy radio (Adapter), call medical crews to the scene (Mediator), and lock the area through the operator terminal (Command). The subsystems remain directly usable; `main` still uses the terminal and incidents directly.
 
 ### State (Team-Selected)
-The State pattern controls the lifecycle of an incident (Reported, Active, Resolved). The behaviour of the incident and the operations permitted depend entirely on its current state, preventing invalid transitions and large switch statements.
+`Incident` delegates `escalate()`, `resolve()` and `addNote()` to its current `IncidentState` (`ReportedState` -> `ActiveState` -> `ResolvedState`). Invalid requests (resolving a reported incident, resolving twice, escalating a resolved incident) are rejected with a clear message. Every transition is announced to the mediator, which is how units coordinate when an incident's condition changes.
 
 ### Factory Method (Team-Selected)
-The Factory Method pattern decouples the core logic from the complex instantiation and initialisation of response units, allowing the system to spawn specific security, medical, or facility components dynamically.
+`ResponseUnitFactory::commissionUnit()` brings a new unit onto the network: it calls the factory method `createResponder()` (overridden by `SecurityFactory`, `MedicalFactory`, `FacilitiesFactory`) and registers the result with the coordinator. New units can be commissioned mid-incident (MED-02 in scenario 2).
+
+## Ownership Policy
+
+| Owner | Owns | Released |
+| :--- | :--- | :--- |
+| `main` | mediator, terminal, facade, incidents, radio adapter, legacy radio | explicit `delete` at shutdown |
+| `EmergencyMediator` | every registered response unit | its destructor |
+| `OperatorTerminal` | every command passed to `executeCommand()` | failed commands immediately; undone commands after `undo()`; the rest in its destructor |
+| `Incident` | its current `IncidentState` | on each state change and in its destructor |
+
+All other pointers (facade members, command receivers, the adapter's adaptee, each unit's coordinator) are non-owning. Owning classes disable copying.
 
 ## Repository Structure
 

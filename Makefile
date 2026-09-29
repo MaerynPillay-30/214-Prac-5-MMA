@@ -3,21 +3,21 @@ CXXFLAGS = -std=c++11 -Wall -Wextra -g
 TARGET   = CampusGuard
 
 SRCS = main.cpp \
-       IncidentState.cpp \
        Incident.cpp \
        ReportedState.cpp \
        ActiveState.cpp \
        ResolvedState.cpp \
        ResponseComponent.cpp \
-       EmergencyMediator.cpp \
        SecurityTeam.cpp \
        MedicalResponder.cpp \
        FacilitiesStaff.cpp \
-       LegacyRadioSystem.cpp \
-       RadioAdapter.cpp \
+       EmergencyMediator.cpp \
+       ResponseUnitFactory.cpp \
        SecurityFactory.cpp \
        MedicalFactory.cpp \
        FacilitiesFactory.cpp \
+       LegacyRadioSystem.cpp \
+       RadioAdapter.cpp \
        OperatorTerminal.cpp \
        DispatchCommand.cpp \
        AlertCommand.cpp \
@@ -26,7 +26,6 @@ SRCS = main.cpp \
 
 OBJS = $(SRCS:.cpp=.o)
 
-# Default target: compile everything
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
@@ -35,8 +34,13 @@ $(TARGET): $(OBJS)
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Remove generated files
+run: $(TARGET)
+	./$(TARGET)
+
+valgrind: $(TARGET)
+	valgrind --leak-check=full --show-leak-kinds=all ./$(TARGET)
+
 clean:
 	rm -f $(OBJS) $(TARGET)
 
-.PHONY: all clean
+.PHONY: all run valgrind clean

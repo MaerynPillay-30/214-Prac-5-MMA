@@ -4,19 +4,21 @@
 #include <string>
 
 /**
- * EmergencyCommand — Command Pattern: Abstract Command interface.
- * All operator actions (dispatch, alert, lockdown) are encapsulated as
- * EmergencyCommand objects, decoupling the invoker (OperatorTerminal)
- * from the receivers (CampusCoordinator, ExternalCommsInterface, FacilitiesStaff).
+ * EmergencyCommand — Command Pattern: abstract Command.
+ *
+ * Every operator action (dispatch a unit, lock an area, issue an alert) is an
+ * EmergencyCommand object, so the invoker (OperatorTerminal) never needs to
+ * know the receivers. execute() returns false when the action could not be
+ * carried out; the terminal then does not record it in the history.
  */
 class EmergencyCommand {
 public:
-    EmergencyCommand() = default;
-    virtual ~EmergencyCommand() = default;
+    EmergencyCommand() {}
+    virtual ~EmergencyCommand() {}
 
-    virtual void execute() = 0;
+    virtual bool execute() = 0;
     virtual void undo() = 0;
-    virtual std::string getCommandName() = 0;
+    virtual std::string getCommandName() const = 0;
 };
 
 #endif // EMERGENCYCOMMAND_H

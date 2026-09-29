@@ -3,9 +3,9 @@
 #include <iostream>
 
 ResponseComponent* FacilitiesFactory::createResponder(CampusCoordinator* coord,
-                                                      const std::string& unitID,
-                                                      const std::string& startLocation) {
-    std::cout << "  [FacilitiesFactory] Instantiating FacilitiesStaff: " << unitID
-              << " @ " << startLocation << std::endl;
-    return new FacilitiesStaff(coord, unitID, startLocation);
+                                                 const std::string& unitID,
+                                                 const std::string& baseLocation) {
+    std::cout << "  [FacilitiesFactory] Creating FacilitiesStaff " << unitID
+              << " based at " << baseLocation << std::endl;
+    return new FacilitiesStaff(coord, unitID, baseLocation);
 }

@@ -1,23 +1,21 @@
 #include "DispatchCommand.h"
+#include "CampusCoordinator.h"
 #include <iostream>
 
-DispatchCommand::DispatchCommand(CampusCoordinator* recv, const std::string& loc)
-    : location(loc), prevLocation(""), receiver(recv) {}
+DispatchCommand::DispatchCommand(CampusCoordinator* recv, const std::string& unit,
+                                 const std::string& loc)
+    : receiver(recv), unitID(unit), location(loc) {}
 
-void DispatchCommand::execute() {
-    std::cout << "    [DispatchCommand] Sending DISPATCH event to mediator for: "
-              << location << std::endl;
-    // Command triggers mediator to coordinate which colleagues should respond.
-    // nullptr sender = command-initiated (not from a specific colleague).
-    receiver->notify(nullptr, "DISPATCH:" + location);
+bool DispatchCommand::execute() {
+    std::cout << "    [DispatchCommand] Requesting " << unitID << " at " << location << std::endl;
+    return receiver->dispatchUnit(unitID, location, "operator dispatch");
 }
 
 void DispatchCommand::undo() {
-    std::cout << "    [DispatchCommand] Sending RECALL event to mediator for: "
-              << location << std::endl;
-    receiver->notify(nullptr, "RECALL:" + location);
+    std::cout << "    [DispatchCommand] Cancelling dispatch of " << unitID << std::endl;
+    receiver->recallUnit(unitID);
 }
 
-std::string DispatchCommand::getCommandName() {
-    return "DispatchCommand -> " + location;
+std::string DispatchCommand::getCommandName() const {
+    return "Dispatch " + unitID + " -> " + location;
 }
