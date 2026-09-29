@@ -17,8 +17,8 @@ The project is implemented in C++11 and meaningfully demonstrates the following 
 
 | Name | Student Number |
 | :--- | :--- |
-| [Participant Name] | [Student Number] |
-| [Participant Name] | [Student Number] |
+| Angela Ramaboea | u25445392 |
+| Matshidiso Dibakoane | u25227506 |
 | Maeryn Pillay | u25146484 |
 
 ## Project Features
